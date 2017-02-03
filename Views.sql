@@ -43,3 +43,5 @@ From resultat r, equipe e
 Where r.equipeId = e.equipeID
 Group by r.equipeID, e.nomEquipe
 ORDER BY TotalPoints DESC;
+
+
