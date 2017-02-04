@@ -17,7 +17,7 @@ ORDER BY COUNT(*) DESC;
 --Affiche le nom du meilleur buteur
 --i.e. quand l'heure de fin de match est mise à jour
 --******************************
-CREATE OR REPLACE FUNCTION FunctionTriggerResultat() RETURNS trigger AS 
+CREATE OR REPLACE FUNCTION FunctionTriggerResultat() RETURNS trigger AS
 $$
 DECLARE
 -- le curseur nous permet de récupérer plusieurs nuplets (ici les 2 concernant un matchID)
@@ -61,7 +61,7 @@ equipeid2;
 -- on donne 3 points à l'équipe 1 et 0 à l'équipe 2
 -- pas besoin de tester si score1>score2 car requete avec un order by desc sur le score
  ELSE
- UPDATE resultat 
+ UPDATE resultat
  SET classement = 0
  WHERE score = score2
  AND matchid=NEW.matchid;
@@ -85,8 +85,8 @@ equipeid2;
  FROM meilleursbuteurs
  WHERE matchid = NEW.matchid
  AND nombredebuts = (SELECT MAX(nombredebuts)
- FROM meilleursbuteurs
-WHERE matchid = NEW.matchid);
+  FROM meilleursbuteurs
+  WHERE matchid = NEW.matchid);
 -- On affiche le nom du meilleur buteur
  RAISE INFO 'Meilleur buteur : %', meilleurButeur;
  RETURN NULL;
@@ -128,7 +128,7 @@ BEGIN
  RETURN NULL;
 END;
 $$
-LANGUAGE 'plpgsql'; 
+LANGUAGE 'plpgsql';
 
 --******************************
 --Création du trigger CalculScore
@@ -143,6 +143,82 @@ EXECUTE PROCEDURE FunctionTriggerScore();
 
 
 
+--Verifie que le but est insere dans un match en cours
+CREATE OR REPLACE FUNCTION FunctionTriggerVerifBut() RETURNS trigger AS
+'
+  DECLARE
+   debut time;
+   fin time;
+
+  BEGIN
+   SELECT INTO debut HeureDebutMatch
+    FROM matchs
+     WHERE NEW.matchid = matchs.matchid;
+
+  IF debut > NEW.HeureBut THEN
+    RAISE EXCEPTION ''Insertion impossible car le match n est pas commence'';
+  END IF;
+
+   SELECT INTO fin HeureFinMatch
+    FROM matchs
+     WHERE NEW.matchid = matchs.matchid
+      AND HeureFinMatch IS NOT NULL;
+
+  IF FOUND THEN
+    RAISE EXCEPTION ''Insertion impossible car le match est termine'';
+  ELSE RETURN NEW;
+  END IF;
+
+ END;'
+LANGUAGE 'plpgsql';
 
 
+CREATE TRIGGER VerifBut
+BEFORE INSERT OR UPDATE ON buts
+FOR EACH ROW
+EXECUTE PROCEDURE FunctionTriggerVerifBut();
 
+
+--Verifie que le score est 0 au debut du match
+CREATE OR REPLACE FUNCTION FunctionTriggerVerifResultat() RETURNS trigger AS
+'
+  BEGIN
+   IF NEW.score <> 0 THEN
+    RAISE EXCEPTION ''Au debut d un match le score doit être 0'';
+  ELSE RETURN NEW;
+  END IF;
+
+ END;'
+LANGUAGE 'plpgsql';
+
+
+CREATE TRIGGER VerifResultat
+BEFORE INSERT ON resultat
+FOR EACH ROW
+EXECUTE PROCEDURE FunctionTriggerVerifResultat();
+
+
+--Verifie que l'heure de fin du match est supperieure a celle du dernier but
+CREATE OR REPLACE FUNCTION FunctionTriggerVerifFinMatch() RETURNS trigger AS
+'
+  DECLARE
+    dernierBut time;
+
+  BEGIN
+   SELECT INTO dernierBut MAX(HeureBut)
+   FROM buts
+   WHERE buts.matchid = NEW.matchid;
+
+   IF dernierBut > NEW.HeureFinMatch AND NEW.HeureFinMatch <> NULL THEN
+    RAISE EXCEPTION ''l heure de fin de match doit etre supperieure au dernier but'';
+  ELSE RETURN NEW;
+  END IF;
+
+ END;'
+LANGUAGE 'plpgsql';
+
+
+CREATE TRIGGER VerifFinMatch
+BEFORE UPDATE ON matchs
+FOR EACH ROW
+EXECUTE PROCEDURE FunctionTriggerVerifFinMatch();
