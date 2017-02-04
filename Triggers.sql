@@ -133,13 +133,43 @@ LANGUAGE 'plpgsql';
 --******************************
 --Création du trigger CalculScore
 --******************************
-CREATE TRIGGER CalculScore
+CREATE TRIGGER InsertionOuSuppressionBut
 -- Le trigger se déclenchera après chaque insertion ou suppression de nuplets de la table BUTS
 -- Après insertion : une équipe vient de marquer, il faut lui ajouter un point
 -- Après suppression : un but avait été accordé à une équipe mais a été invalidé, un point doit être retiré à l'équipe concernée
 AFTER INSERT OR DELETE ON BUTS
 FOR EACH ROW
 EXECUTE PROCEDURE FunctionTriggerScore();
+
+
+
+--Calcul le nombre de buts encaisses par le gardien insere dans StatsGardiens
+CREATE OR REPLACE FUNCTION FunctionTriggerUpdateStatsGardiens() RETURNS trigger AS
+$$
+BEGIN
+  UPDATE StatsGardiens S
+  SET NbButsGardien = (SELECT COUNT(*)
+    FROM Buts B
+    WHERE S.MatchID = B.MatchID
+    AND S.HeureDebutGardien < B.HeureBut
+    AND (S.HeureFinGardien > B.HeureBut OR S.HeureFinGardien = NULL)
+    );
+  RETURN NULL;
+END;
+$$
+LANGUAGE 'plpgsql';
+
+
+CREATE TRIGGER CalculButsEncaisse
+AFTER INSERT ON StatsGardiens
+FOR EACH ROW
+EXECUTE PROCEDURE FunctionTriggerUpdateStatsGardiens();
+
+
+CREATE TRIGGER CalculButsEncaisse
+AFTER INSERT OR UPDATE ON Buts
+FOR EACH ROW
+EXECUTE PROCEDURE FunctionTriggerUpdateStatsGardiens();
 
 
 
