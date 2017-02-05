@@ -60,3 +60,36 @@ WHERE b.equipeIDBUTEUR = e.equipeID
 AND b.numerobuteur = e.numero
 GROUP BY numerobuteur, nom, matchid
 ORDER BY COUNT(*) DESC;
+
+
+--******************************
+--Creation vue JoueursEnOr
+--Joueurs ayant marque un but à chaque rencontres
+--******************************
+CREATE OR REPLACE VIEW JoueursEnOr AS
+SELECT nom, Prenom, JE.nomEquipe, numero
+FROM joueurs J NATURAL JOIN Equipe JE
+WHERE NOT EXISTS (SELECT *
+  FROM Matchs NATURAL JOIN Resultat M
+  WHERE M.EquipeID = J.EquipeID
+  AND NOT EXISTS (SELECT *
+    FROM Buts B
+    WHERE J.Numero = B.NumeroButeur
+    AND J.EquipeID = B.EquipeIDButeur
+    AND M.matchID=B.matchID));
+
+--******************************
+--Creation vue EquipesEnplomb
+--Equipes ayant perdus tout leurs matchs
+--******************************
+CREATE OR REPLACE VIEW EquipesEnplomb AS
+SELECT EquipeID, nomequipe
+FROM equipe E
+WHERE NOT EXISTS (SELECT *
+  FROM Matchs NATURAL JOIN Resultat M
+  WHERE M.EquipeID = E.EquipeID
+  AND NOT EXISTS (SELECT *
+    FROM resultat R
+    WHERE R.MatchID=M.MatchID
+    AND R.equipeID=E.equipeID
+    AND R.classement<>3));
