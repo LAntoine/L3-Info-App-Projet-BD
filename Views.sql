@@ -29,7 +29,7 @@ GROUP BY matchid;
 -- Le temps de présence est calculé en minute
 -- On utilise EXTRACT(epoch from ...) afin de convertir l'interval en valeur numérique
 --******************************
-CREATE VIEW EfficaciteGardiens AS
+CREATE OR REPLACE VIEW EfficaciteGardiens AS
 SELECT statsgardiens.matchid,
 numerogardien,
 equipeid,nbbutsgardien,
@@ -49,4 +49,14 @@ Where r.equipeId = e.equipeID
 Group by r.equipeID, e.nomEquipe
 ORDER BY TotalPoints DESC;
 
-
+--******************************
+--Création de la vue MeilleursButeurs
+--Utilisée dans le trigger resultat
+--******************************
+CREATE OR REPLACE VIEW MeilleursButeurs AS
+SELECT numerobuteur,nom,matchid, COUNT(*) AS nombreDeButs
+FROM buts b, joueurs e
+WHERE b.equipeIDBUTEUR = e.equipeID
+AND b.numerobuteur = e.numero
+GROUP BY numerobuteur, nom, matchid
+ORDER BY COUNT(*) DESC;
