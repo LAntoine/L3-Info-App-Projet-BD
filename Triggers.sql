@@ -132,8 +132,10 @@ FOR EACH ROW
 EXECUTE PROCEDURE FunctionTriggerScore();
 
 
-
---Calcul le nombre de buts encaisses par le gardien insere dans StatsGardiens
+--******************************
+--Fonction UpdateStatsGardiens
+--Calcul le nombre de buts encaisses par le gardien pour l inserer dans StatsGardiens
+--******************************
 CREATE OR REPLACE FUNCTION FunctionTriggerUpdateStatsGardiens() RETURNS trigger AS
 $$
 BEGIN
@@ -149,12 +151,15 @@ END;
 $$
 LANGUAGE 'plpgsql';
 
-
+--******************************
+--Creation de 2 triggers utilisant la fonction UpdateStatsGardiens
+--Le premier lors d un insert sur StatsGardiens
+--Le second lors d un insert ou update dans buts
+--******************************
 CREATE TRIGGER CalculButsEncaisse
 AFTER INSERT ON StatsGardiens
 FOR EACH ROW
 EXECUTE PROCEDURE FunctionTriggerUpdateStatsGardiens();
-
 
 CREATE TRIGGER CalculButsEncaisse
 AFTER INSERT OR UPDATE ON Buts
@@ -162,8 +167,10 @@ FOR EACH ROW
 EXECUTE PROCEDURE FunctionTriggerUpdateStatsGardiens();
 
 
-
+--******************************
+--Function VerifBut
 --Verifie que le but est insere dans un match en cours
+--******************************
 CREATE OR REPLACE FUNCTION FunctionTriggerVerifBut() RETURNS trigger AS
 '
   DECLARE
@@ -192,14 +199,18 @@ CREATE OR REPLACE FUNCTION FunctionTriggerVerifBut() RETURNS trigger AS
  END;'
 LANGUAGE 'plpgsql';
 
-
+--******************************
+--Creation du trigger VerifBut
+--******************************
 CREATE TRIGGER VerifBut
 BEFORE INSERT OR UPDATE ON buts
 FOR EACH ROW
 EXECUTE PROCEDURE FunctionTriggerVerifBut();
 
-
+--******************************
+--Fonction Verif resultat
 --Verifie que le score est 0 au debut du match
+--******************************
 CREATE OR REPLACE FUNCTION FunctionTriggerVerifResultat() RETURNS trigger AS
 '
   BEGIN
@@ -211,14 +222,18 @@ CREATE OR REPLACE FUNCTION FunctionTriggerVerifResultat() RETURNS trigger AS
  END;'
 LANGUAGE 'plpgsql';
 
-
+--******************************
+--Creation trigger VerifResultat
+--******************************
 CREATE TRIGGER VerifResultat
 BEFORE INSERT ON resultat
 FOR EACH ROW
 EXECUTE PROCEDURE FunctionTriggerVerifResultat();
 
-
+--******************************
+--Fonction VerifFinMatch
 --Verifie que l'heure de fin du match est supperieure a celle du dernier but
+--******************************
 CREATE OR REPLACE FUNCTION FunctionTriggerVerifFinMatch() RETURNS trigger AS
 '
   DECLARE
@@ -237,7 +252,9 @@ CREATE OR REPLACE FUNCTION FunctionTriggerVerifFinMatch() RETURNS trigger AS
  END;'
 LANGUAGE 'plpgsql';
 
-
+--******************************
+--Creation du trigger VerifFinMatch
+--******************************
 CREATE TRIGGER VerifFinMatch
 BEFORE UPDATE ON matchs
 FOR EACH ROW
