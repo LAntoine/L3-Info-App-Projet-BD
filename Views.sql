@@ -20,14 +20,23 @@ CREATE OR REPLACE VIEW nb_buts_par_match AS SELECT matchid, COUNT(*) AS nbbutsma
 FROM buts
 GROUP BY matchid;
 
-
-CREATE OR REPLACE VIEW efficacite_gardiens AS SELECT S.matchid, J.nom, J.prenom,
-floor((nbbutsgardien+0.0)/nbbutsmatch*100) AS Efficacite
-FROM statsgardiens S, joueurs J, nb_buts_par_match NB
-WHERE S.numerogardien = J.numero 
-AND S.equipeid = J.equipeid
-AND S.matchid = NB.matchid
-AND nbbutsmatch IS NOT NULL;
+--******************************
+-- Création de la vue EfficaciteGardiens
+-- Utilisée dans le trigger resultat
+-- L'efficacite est le ratio du nb de buts encaissés / temps passé sur le terrain en min
+-- Plus il est faible et plus le gardien a été efficace
+-- Nbbutsgardien/tempsPresence
+-- Le temps de présence est calculé en minute
+-- On utilise EXTRACT(epoch from ...) afin de convertir l'interval en valeur numérique
+--******************************
+CREATE VIEW EfficaciteGardiens AS
+SELECT statsgardiens.matchid,
+numerogardien,
+equipeid,nbbutsgardien,
+EXTRACT(epoch FROM heurefingardien-heuredebutgardien)/60 AS tempsPresence ,
+nbbutsgardien/(EXTRACT(epoch FROM heurefingardien-heuredebutgardien)/60) AS efficacite
+FROM statsgardiens, nb_buts_par_match
+WHERE statsgardiens.matchid=nb_buts_par_match.matchid;
 
 --******************************
 --Affichage du classement des équipes
