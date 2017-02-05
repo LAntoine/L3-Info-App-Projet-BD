@@ -1,14 +1,4 @@
---******************************
---Création de la vue MeilleursButeurs
---Utilisée dans le trigger resultat
---******************************
-CREATE OR REPLACE VIEW MeilleursButeurs AS
-SELECT numerobuteur,nom,matchid, COUNT(*) AS nombreDeButs
-FROM buts b, joueurs e
-WHERE b.equipeIDBUTEUR = e.equipeID
-AND b.numerobuteur = e.numero
-GROUP BY numerobuteur, nom, matchid
-ORDER BY COUNT(*) DESC;
+
 --******************************
 --Fonction Resultat
 --Calcule le nombre de points par équipe en fonction du score final
